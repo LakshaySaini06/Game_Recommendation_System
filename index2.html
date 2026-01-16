@@ -1,0 +1,1656 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>YourNextGame | AI Game Discovery</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;600;700&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --primary: #6C63FF;
+            --secondary: #00F5D4;
+            --accent: #FF6584;
+            --bg-dark: #0f172a;
+            --glass: rgba(255, 255, 255, 0.05);
+            --glass-border: rgba(255, 255, 255, 0.1);
+            --text-main: #f8fafc;
+            --text-muted: #94a3b8;
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: 'Outfit', sans-serif;
+        }
+
+        body {
+            background-color: var(--bg-dark);
+            color: var(--text-main);
+            overflow-x: hidden;
+            min-height: 100vh;
+        }
+
+        #canvas-container {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            z-index: -1;
+            opacity: 0.6;
+            pointer-events: none;
+        }
+
+        /* Layout & Navigation */
+        .app-container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 2rem;
+            position: relative;
+            z-index: 10;
+        }
+
+        nav {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 1rem 2rem;
+            background: rgba(15, 23, 42, 0.6);
+            backdrop-filter: blur(16px);
+            -webkit-backdrop-filter: blur(16px);
+            border: 1px solid var(--glass-border);
+            border-radius: 24px;
+            margin-bottom: 2rem;
+            position: sticky;
+            top: 20px;
+            z-index: 100;
+        }
+
+        .logo {
+            font-size: 1.5rem;
+            font-weight: 700;
+            background: linear-gradient(to right, var(--primary), var(--secondary));
+            background-clip: text;
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            cursor: pointer;
+        }
+
+        .nav-links {
+            display: flex;
+            gap: 2rem;
+        }
+
+        .nav-btn {
+            background: transparent;
+            border: none;
+            color: var(--text-muted);
+            font-size: 1rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            position: relative;
+        }
+
+        .nav-btn:hover,
+        .nav-btn.active {
+            color: var(--text-main);
+        }
+
+        .nav-btn.active::after {
+            content: '';
+            position: absolute;
+            bottom: -5px;
+            left: 0;
+            width: 100%;
+            height: 2px;
+            background: var(--secondary);
+            box-shadow: 0 0 10px var(--secondary);
+        }
+
+        /* Sections */
+        .section {
+            display: none;
+            animation: fadeIn 0.5s ease-out;
+        }
+
+        .section.active {
+            display: block;
+        }
+
+        @keyframes fadeIn {
+            from {
+                opacity: 0;
+                transform: translateY(20px);
+            }
+
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        /* Home / Hero */
+        .hero {
+            text-align: center;
+            padding: 4rem 0;
+        }
+
+        .hero h1 {
+            font-size: 4rem;
+            margin-bottom: 1rem;
+            line-height: 1.1;
+        }
+
+        .hero p {
+            font-size: 1.2rem;
+            color: var(--text-muted);
+            max-width: 600px;
+            margin: 0 auto 3rem auto;
+        }
+
+        .mood-engine {
+            background: var(--glass);
+            backdrop-filter: blur(12px);
+            border: 1px solid var(--glass-border);
+            border-radius: 24px;
+            padding: 2rem;
+            max-width: 800px;
+            margin: 0 auto;
+        }
+
+        .mood-title {
+            margin-bottom: 20px;
+            font-size: 1.5rem;
+        }
+
+        .mood-chips {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 1rem;
+            justify-content: center;
+            margin-bottom: 2rem;
+        }
+
+        .chip {
+            padding: 0.8rem 1.5rem;
+            border-radius: 50px;
+            background: rgba(255, 255, 255, 0.03);
+            border: 1px solid var(--glass-border);
+            color: var(--text-main);
+            cursor: pointer;
+            transition: all 0.3s ease;
+            font-weight: 500;
+        }
+
+        .chip:hover {
+            background: rgba(255, 255, 255, 0.1);
+            transform: translateY(-2px);
+        }
+
+        .chip.selected {
+            background: var(--primary);
+            border-color: var(--primary);
+            box-shadow: 0 0 15px rgba(108, 99, 255, 0.4);
+        }
+
+        .cta-btn {
+            background: linear-gradient(45deg, var(--primary), var(--accent));
+            color: white;
+            padding: 1rem 3rem;
+            border: none;
+            border-radius: 50px;
+            font-size: 1.1rem;
+            font-weight: 700;
+            cursor: pointer;
+            transition: all 0.3s;
+            box-shadow: 0 5px 20px rgba(108, 99, 255, 0.3);
+        }
+
+        .cta-btn:hover {
+            transform: scale(1.05);
+            box-shadow: 0 10px 30px rgba(108, 99, 255, 0.5);
+        }
+
+        /* Browse Controls */
+        .controls {
+            display: flex;
+            gap: 1rem;
+            margin-bottom: 2rem;
+            flex-wrap: wrap;
+            background: var(--glass);
+            padding: 1rem;
+            border-radius: 16px;
+            border: 1px solid var(--glass-border);
+            align-items: center;
+        }
+
+        .search-bar {
+            flex: 1;
+            background: rgba(0, 0, 0, 0.2);
+            border: 1px solid var(--glass-border);
+            padding: 0.8rem 1.5rem;
+            border-radius: 12px;
+            color: white;
+            font-size: 1rem;
+        }
+
+        .select-group {
+            padding: 0.8rem;
+            border-radius: 12px;
+            background: rgba(0, 0, 0, 0.2);
+            border: 1px solid var(--glass-border);
+            color: var(--text-main);
+        }
+
+        /* Game Grid */
+        .game-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+            gap: 2rem;
+            margin-top: 2rem;
+        }
+
+        .game-card {
+            background: var(--glass);
+            border: 1px solid var(--glass-border);
+            border-radius: 20px;
+            overflow: hidden;
+            transition: all 0.4s ease;
+            position: relative;
+            backdrop-filter: blur(10px);
+            height: 100%;
+            display: flex;
+            flex-direction: column;
+        }
+
+        .game-card:hover {
+            transform: translateY(-10px);
+            border-color: var(--secondary);
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.3);
+        }
+
+        .card-visual {
+            height: 350px;
+            /* Taller for vertical posters */
+            background: linear-gradient(45deg, #2a2a2a, #1a1a1a);
+            position: relative;
+            overflow: hidden;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .card-visual img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+            transition: transform 0.5s ease;
+        }
+
+        .game-card:hover .card-visual img {
+            transform: scale(1.1);
+        }
+
+        .card-visual::after {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(to top, rgba(0, 0, 0, 0.8), transparent);
+            pointer-events: none;
+        }
+
+        .card-content {
+            padding: 1.5rem;
+            display: flex;
+            flex-direction: column;
+            flex-grow: 1;
+        }
+
+        .game-meta {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 0.5rem;
+            font-size: 0.8rem;
+            color: var(--text-muted);
+        }
+
+        .game-title {
+            font-size: 1.3rem;
+            font-weight: 700;
+            margin-bottom: 0.5rem;
+            line-height: 1.3;
+        }
+
+        .game-genre {
+            display: inline-block;
+            padding: 0.3rem 0.8rem;
+            background: rgba(108, 99, 255, 0.2);
+            color: var(--primary);
+            border-radius: 8px;
+            font-size: 0.8rem;
+            margin-bottom: 1rem;
+        }
+
+        .card-footer {
+            margin-top: auto;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .rating {
+            color: #FFD700;
+            font-weight: 600;
+        }
+
+        .fav-btn {
+            background: none;
+            border: none;
+            font-size: 1.5rem;
+            cursor: pointer;
+            color: rgba(255, 255, 255, 0.2);
+            transition: all 0.3s;
+        }
+
+        .fav-btn:hover {
+            transform: scale(1.2);
+        }
+
+        .fav-btn.active {
+            color: var(--accent);
+            text-shadow: 0 0 15px var(--accent);
+        }
+
+        /* Profile Styles */
+        .profile-header {
+            background: linear-gradient(90deg, rgba(108, 99, 255, 0.2), rgba(0, 245, 212, 0.1));
+            padding: 3rem;
+            border-radius: 24px;
+            margin-bottom: 3rem;
+            display: flex;
+            align-items: center;
+            gap: 2rem;
+            border: 1px solid var(--glass-border);
+        }
+
+        .avatar {
+            width: 100px;
+            height: 100px;
+            border-radius: 50%;
+            background: linear-gradient(45deg, var(--primary), var(--secondary));
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 3rem;
+        }
+
+        .stats-container {
+            display: flex;
+            gap: 3rem;
+            margin-top: 1rem;
+        }
+
+        .stat-item h3 {
+            font-size: 2rem;
+            margin: 0;
+            background: linear-gradient(to bottom, #fff, #aaa);
+            background-clip: text;
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+
+        .stat-item p {
+            color: var(--text-muted);
+            font-size: 0.9rem;
+        }
+
+        .empty-state {
+            text-align: center;
+            padding: 4rem;
+            color: var(--text-muted);
+        }
+
+        /* Toast Notifications */
+        #toast-container {
+            position: fixed;
+            bottom: 30px;
+            right: 30px;
+            z-index: 1000;
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+        }
+
+        .toast {
+            background: rgba(15, 23, 42, 0.9);
+            backdrop-filter: blur(12px);
+            border: 1px solid var(--glass-border);
+            color: white;
+            padding: 1rem 1.5rem;
+            border-radius: 12px;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.5);
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            animation: slideIn 0.3s ease-out forwards;
+            min-width: 250px;
+        }
+
+        .toast.success {
+            border-left: 4px solid var(--secondary);
+        }
+
+        .toast.info {
+            border-left: 4px solid var(--primary);
+        }
+
+        @keyframes slideIn {
+            from {
+                transform: translateX(100%);
+                opacity: 0;
+            }
+
+            to {
+                transform: translateX(0);
+                opacity: 1;
+            }
+        }
+
+        @keyframes fadeOut {
+            to {
+                opacity: 0;
+                transform: translateY(10px);
+            }
+        }
+
+        /* Modal Styles */
+        .modal-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.7);
+            backdrop-filter: blur(8px);
+            z-index: 1000;
+            display: none;
+            justify-content: center;
+            align-items: center;
+            opacity: 0;
+            transition: opacity 0.3s ease;
+        }
+
+        .modal-overlay.active {
+            display: flex;
+            opacity: 1;
+        }
+
+        .modal {
+            background: var(--bg-dark);
+            border: 1px solid var(--glass-border);
+            border-radius: 24px;
+            padding: 2rem;
+            width: 100%;
+            max-width: 500px;
+            position: relative;
+            box-shadow: 0 20px 50px rgba(0, 0, 0, 0.5);
+            transform: scale(0.9);
+            transition: transform 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
+        }
+
+        .modal-overlay.active .modal {
+            transform: scale(1);
+        }
+
+        .modal-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 2rem;
+        }
+
+        .modal-close {
+            background: none;
+            border: none;
+            color: var(--text-muted);
+            font-size: 1.5rem;
+            cursor: pointer;
+            transition: color 0.3s;
+        }
+
+        .modal-close:hover {
+            color: var(--text-main);
+        }
+
+        .form-group {
+            margin-bottom: 1.5rem;
+        }
+
+        .form-label {
+            display: block;
+            margin-bottom: 0.5rem;
+            color: var(--text-muted);
+            font-size: 0.9rem;
+        }
+
+        .form-input,
+        .form-select {
+            width: 100%;
+            background: rgba(255, 255, 255, 0.05);
+            border: 1px solid var(--glass-border);
+            border-radius: 12px;
+            padding: 1rem;
+            color: white;
+            font-size: 1rem;
+            outline: none;
+            transition: all 0.3s;
+            appearance: none;
+            /* Remove default arrow */
+            background-image: url("data:image/svg+xml;charset=UTF-8,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='white' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3e%3cpolyline points='6 9 12 15 18 9'%3e%3c/polyline%3e%3c/svg%3e");
+            background-repeat: no-repeat;
+            background-position: right 1rem center;
+            background-size: 1em;
+        }
+
+        /* Specific for Input which doesn't need the arrow */
+        .form-input {
+            background-image: none;
+        }
+
+        .form-input:focus,
+        .form-select:focus {
+            border-color: var(--secondary);
+            background: rgba(255, 255, 255, 0.1);
+            box-shadow: 0 0 15px rgba(0, 245, 212, 0.2);
+        }
+
+        /* Dropdown Options Styling */
+        .form-select option {
+            background-color: #1e293b;
+            /* Dark slate background */
+            color: white;
+            padding: 10px;
+        }
+
+
+        .sparkle-btn {
+            background: linear-gradient(135deg, var(--primary), var(--secondary));
+            color: white;
+            border: none;
+            padding: 0.8rem 2rem;
+            border-radius: 50px;
+            font-weight: 700;
+            font-size: 1.1rem;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            gap: 0.8rem;
+            margin-bottom: 2rem;
+            transition: all 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+            box-shadow: 0 0 20px rgba(108, 99, 255, 0.4);
+            position: relative;
+            overflow: hidden;
+            animation: pulse-glow 2s infinite;
+        }
+
+        .sparkle-btn:hover {
+            transform: scale(1.05) translateY(-2px);
+            box-shadow: 0 0 30px rgba(0, 245, 212, 0.6);
+        }
+
+        .sparkle-btn::after {
+            content: '';
+            position: absolute;
+            top: -50%;
+            left: -50%;
+            width: 200%;
+            height: 200%;
+            background: linear-gradient(45deg, transparent, rgba(255, 255, 255, 0.3), transparent);
+            transform: rotate(45deg);
+            animation: shine 3s infinite;
+        }
+
+        @keyframes pulse-glow {
+            0% {
+                box-shadow: 0 0 0 0 rgba(108, 99, 255, 0.4);
+            }
+
+            70% {
+                box-shadow: 0 0 0 15px rgba(108, 99, 255, 0);
+            }
+
+            100% {
+                box-shadow: 0 0 0 0 rgba(108, 99, 255, 0);
+            }
+        }
+
+        @keyframes shine {
+            0% {
+                left: -100%;
+                top: -100%;
+            }
+
+            20% {
+                left: 100%;
+                top: 100%;
+            }
+
+            100% {
+                left: 100%;
+                top: 100%;
+            }
+        }
+
+        .setup-badge {
+            background: #FF6584;
+            color: white;
+            font-size: 0.7rem;
+            padding: 2px 8px;
+            border-radius: 10px;
+            position: absolute;
+            top: -10px;
+            right: -10px;
+            animation: bounce 1s infinite;
+        }
+    </style>
+</head>
+
+<body>
+    <div id="canvas-container"></div>
+    <div id="toast-container"></div>
+
+    <div class="app-container">
+        <nav>
+            <div class="logo" onclick="app.navigate('home')">YourNextGame</div>
+            <div class="nav-links">
+                <button class="nav-btn active" data-target="home" onclick="app.navigate('home')">Home</button>
+                <button class="nav-btn" data-target="browse" onclick="app.navigate('browse')">Browse</button>
+                <button class="nav-btn" data-target="profile" onclick="app.navigate('profile')">My Profile</button>
+            </div>
+        </nav>
+
+        <!-- HOME SECTION -->
+        <section id="home" class="section active">
+            <div class="hero">
+                <h1>Discover Your Next<br>Obsession</h1>
+                <p>An AI-powered discovery engine tailored to your current mood and preferences. Stop searching, start
+                    playing.</p>
+
+                <div class="mood-engine">
+                    <div
+                        style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
+                        <h2 class="mood-title" style="margin-bottom: 0;">I'm looking for...</h2>
+                        <button id="personalize-btn" class="sparkle-btn" onclick="app.openPersonalization()">
+                            <span>✨ Customize AI</span>
+                        </button>
+                    </div>
+                    <div class="mood-chips" id="mood-selector">
+                        <div class="chip" data-mood="action">Adrenaline ⚡</div>
+                        <div class="chip" data-mood="chill">Relaxing 🌊</div>
+                        <div class="chip" data-mood="story">Deep Story 📖</div>
+                        <div class="chip" data-mood="strategy">Brainy 🧠</div>
+                        <div class="chip" data-mood="scary">Scary 👻</div>
+                        <div class="chip" data-mood="short">Quick Fix ⏱️</div>
+                        <div class="chip" data-mood="challenging">Hard 💀</div>
+                        <div class="chip" data-mood="social">Multiplayer 👥</div>
+                    </div>
+                    <button class="cta-btn" onclick="app.generateRecommendations()">Find Games</button>
+                </div>
+            </div>
+
+            <h2 style="margin-top: 4rem; margin-bottom: 1.5rem;">Recommended for You</h2>
+            <div id="recommendation-grid" class="game-grid">
+                <!-- Javascript will populate this -->
+            </div>
+        </section>
+
+        <!-- BROWSE SECTION -->
+        <section id="browse" class="section">
+            <div class="controls">
+                <input type="text" class="search-bar" placeholder="Search games..."
+                    oninput="app.handleSearch(this.value)">
+                <select class="select-group" id="sort-select" onchange="app.handleSort(this.value)">
+                    <option value="newest">Release: Newest First</option>
+                    <option value="oldest">Release: Oldest First</option>
+                    <option value="rating">Highest Rated</option>
+                    <option value="name">Alphabetical</option>
+                </select>
+                <select class="select-group" id="genre-filter" onchange="app.handleFilter(this.value)">
+                    <option value="all">All Genres</option>
+                    <!-- Populated by JS -->
+                </select>
+            </div>
+            <div id="browse-grid" class="game-grid">
+                <!-- Populated by JS -->
+            </div>
+        </section>
+
+        <!-- PROFILE SECTION -->
+        <section id="profile" class="section">
+            <div class="profile-header">
+                <div class="avatar">👤</div>
+                <div>
+                    <div style="display: flex; align-items: center; gap: 15px; margin-bottom: 5px;">
+                        <h2 id="profile-username" style="margin: 0;">Welcome back, Gamer</h2>
+                        <button class="edit-btn" onclick="app.toggleEditName()" title="Edit Name"
+                            style="background: rgba(255,255,255,0.1); border: 1px solid var(--glass-border); border-radius: 50%; width: 32px; height: 32px; cursor: pointer; display: flex; align-items: center; justify-content: center; transition: all 0.3s;">✏️</button>
+                    </div>
+                    <div id="edit-name-container"
+                        style="display: none; align-items: center; gap: 10px; margin-bottom: 1rem;">
+                        <input type="text" id="username-input" class="form-input" style="width: 200px; padding: 0.5rem;"
+                            placeholder="Enter name">
+                        <button class="cta-btn" onclick="app.saveUsername()"
+                            style="padding: 0.5rem 1.5rem; font-size: 0.9rem;">Save</button>
+                        <button class="nav-btn" onclick="app.toggleEditName()"
+                            style="font-size: 0.9rem; margin: 0;">Cancel</button>
+                    </div>
+                    <div class="stats-container">
+                        <div class="stat-item">
+                            <h3 id="fav-count">0</h3>
+                            <p>Favorites</p>
+                        </div>
+                        <div class="stat-item">
+                            <h3>Level 5</h3>
+                            <p>Explorer Rank</p>
+                        </div>
+                    </div>
+                    <!-- Gamer Summary -->
+                    <div id="gamer-summary"
+                        style="margin-top: 1.5rem; color: #cbd5e1; font-style: italic; background: rgba(255,255,255,0.05); padding: 1rem; border-radius: 8px; border-left: 3px solid var(--secondary);">
+                        Computing your gaming persona...
+                    </div>
+                </div>
+            </div>
+
+            <h2>Your Favorites Library</h2>
+            <div id="favorites-grid" class="game-grid">
+                <!-- Populated by JS -->
+            </div>
+        </section>
+    </div>
+
+    <!-- PERSONALIZATION MODAL -->
+    <div id="personalization-modal" class="modal-overlay">
+        <div class="modal">
+            <div class="modal-header">
+                <h2>AI Calibration 🤖</h2>
+                <button class="modal-close" onclick="app.closePersonalization()">×</button>
+            </div>
+            <div class="modal-body">
+                <p style="color: var(--text-muted); margin-bottom: 1.5rem;">
+                    Help our Machine Learning model fine-tune recommendations for you.
+                    <br><small>(Data is processed locally in your browser)</small>
+                </p>
+
+                <div class="form-group">
+                    <label class="form-label">Age</label>
+                    <input type="number" id="user-age" class="form-input" placeholder="e.g. 24">
+                </div>
+
+                <div class="form-group">
+                    <label class="form-label">Gender</label>
+                    <select id="user-gender" class="form-select">
+                        <option value="">Prefer not to say</option>
+                        <option value="male">Male</option>
+                        <option value="female">Female</option>
+                        <option value="non-binary">Non-binary</option>
+                        <option value="other">Other</option>
+                    </select>
+                </div>
+
+                <div class="form-group">
+                    <label class="form-label">Region</label>
+                    <select id="user-country" class="form-select">
+                        <option value="">Select Region</option>
+                        <option value="NA">North America</option>
+                        <option value="EU">Europe</option>
+                        <option value="ASIA">Asia</option>
+                        <option value="SA">South America</option>
+                        <option value="OCE">Oceania</option>
+                        <option value="AFR">Africa</option>
+                    </select>
+                </div>
+
+                <button class="cta-btn" style="width: 100%" onclick="app.savePersonalization()">
+                    Save Profile & Calibrate
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // --- 1. DATASET ---
+        const gameData = [
+            { id: 1, title: "Elden Ring", genre: "RPG", year: 2022, rating: 9.8, mood: ["challenging", "story", "action"], steamId: "1245620" },
+            { id: 2, title: "Stardew Valley", genre: "Simulation", year: 2016, rating: 9.5, mood: ["chill", "social", "short"], steamId: "413150" },
+            { id: 3, title: "Doom Eternal", genre: "FPS", year: 2020, rating: 9.0, mood: ["action", "adrenaline", "challenging"], steamId: "782330" },
+            { id: 4, title: "The Witcher 3", genre: "RPG", year: 2015, rating: 9.9, mood: ["story", "action", "deep"], steamId: "292030" },
+            { id: 5, title: "Portal 2", genre: "Puzzle", year: 2011, rating: 9.7, mood: ["strategy", "story", "short"], steamId: "620" },
+            { id: 6, title: "Hollow Knight", genre: "Metroidvania", year: 2017, rating: 9.4, mood: ["challenging", "story", "dark"], steamId: "367520" },
+            { id: 7, title: "Minecraft", genre: "Sandbox", year: 2011, rating: 9.3, mood: ["chill", "social", "creative"], imageUrl: "https://upload.wikimedia.org/wikipedia/en/5/51/Minecraft_2024_cover_art.png" },
+            { id: 8, title: "Red Dead Redemption 2", genre: "Action-Adventure", year: 2018, rating: 9.8, mood: ["story", "action", "realistic"], steamId: "1174180" },
+            { id: 9, title: "Among Us", genre: "Social Deduction", year: 2018, rating: 8.5, mood: ["social", "short", "funny"], steamId: "945360" },
+            { id: 10, title: "Dark Souls 3", genre: "RPG", year: 2016, rating: 9.2, mood: ["challenging", "action", "dark"], steamId: "374320" },
+            { id: 11, title: "Animal Crossing: New Horizons", genre: "Simulation", year: 2020, rating: 9.0, mood: ["chill", "social"], imageUrl: "https://upload.wikimedia.org/wikipedia/en/1/1f/Animal_Crossing_New_Horizons.jpg" },
+            { id: 12, title: "Cyberpunk 2077", genre: "RPG", year: 2020, rating: 8.6, mood: ["story", "action", "futuristic"], steamId: "1091500" },
+            { id: 13, title: "Hades", genre: "Roguelike", year: 2020, rating: 9.6, mood: ["action", "story", "challenging", "short"], steamId: "1145360" },
+            { id: 14, title: "God of War Ragnarök", genre: "Action-Adventure", year: 2022, rating: 9.7, mood: ["story", "action", "epic"], steamId: "2322010" },
+            { id: 15, title: "Valorant", genre: "FPS", year: 2020, rating: 8.0, mood: ["action", "social", "competitive"], imageUrl: "https://upload.wikimedia.org/wikipedia/en/5/51/Valorant_cover_art.jpg" },
+            { id: 16, title: "Civilization VI", genre: "Strategy", year: 2016, rating: 8.8, mood: ["strategy", "brainy", "long"], steamId: "289070" },
+            { id: 17, title: "Resident Evil Village", genre: "Horror", year: 2021, rating: 8.9, mood: ["scary", "action", "story"], steamId: "1196590" },
+            { id: 18, title: "It Takes Two", genre: "Platformer", year: 2021, rating: 9.5, mood: ["social", "story", "funny"], steamId: "1426210" },
+            { id: 19, title: "Celeste", genre: "Platformer", year: 2018, rating: 9.3, mood: ["challenging", "story", "pixel"], steamId: "504230" },
+            { id: 20, title: "Zelda: Breath of the Wild", genre: "Action-Adventure", year: 2017, rating: 9.9, mood: ["story", "chill", "exploration"], imageUrl: "https://upload.wikimedia.org/wikipedia/en/c/c6/The_Legend_of_Zelda_Breath_of_the_Wild.jpg" },
+            { id: 21, title: "Fortnite", genre: "Battle Royale", year: 2017, rating: 8.0, mood: ["action", "social", "short"], imageUrl: "https://upload.wikimedia.org/wikipedia/en/a/ad/Fortnite_cover.jpg" },
+            { id: 22, title: "Disco Elysium", genre: "RPG", year: 2019, rating: 9.6, mood: ["story", "brainy", "deep"], steamId: "632470" },
+            { id: 23, title: "Outer Wilds", genre: "Adventure", year: 2019, rating: 9.5, mood: ["story", "chill", "mystery"], steamId: "753640" },
+            { id: 24, title: "Phasmophobia", genre: "Horror", year: 2020, rating: 8.4, mood: ["scary", "social"], steamId: "739630" },
+            { id: 25, title: "Factorio", genre: "Simulation", year: 2020, rating: 9.8, mood: ["strategy", "brainy", "addictive"], steamId: "427520" },
+            { id: 26, title: "Half-Life 2", genre: "FPS", year: 2004, rating: 9.7, mood: ["action", "story", "classic"], steamId: "220" },
+            { id: 27, title: "Tetris Effect", genre: "Puzzle", year: 2018, rating: 9.2, mood: ["chill", "trippy", "short"], steamId: "1003590" },
+            { id: 28, title: "Bloodborne", genre: "RPG", year: 2015, rating: 9.4, mood: ["challenging", "scary", "dark"], imageUrl: "https://upload.wikimedia.org/wikipedia/en/6/68/Bloodborne_Cover_Wallpaper.jpg" },
+            { id: 29, title: "Subnautica", genre: "Survival", year: 2018, rating: 9.3, mood: ["scary", "exploration", "survival"], steamId: "264710" },
+            { id: 30, title: "Undertale", genre: "RPG", year: 2015, rating: 9.5, mood: ["story", "funny", "pixel"], steamId: "391540" },
+            { id: 31, title: "Persona 5 Royal", genre: "JRPG", year: 2020, rating: 9.6, mood: ["story", "stylish", "long"], steamId: "1687950" },
+            { id: 32, title: "Horizon Forbidden West", genre: "Action-Adventure", year: 2022, rating: 8.9, mood: ["action", "story", "beautiful"], steamId: "2420110" },
+            { id: 33, title: "Sekiro: Shadows Die Twice", genre: "Action", year: 2019, rating: 9.3, mood: ["hard", "action", "ninja"], steamId: "814380" },
+            { id: 34, title: "Spider-Man 2", genre: "Action", year: 2023, rating: 9.1, mood: ["action", "hero", "exciting"], imageUrl: "https://upload.wikimedia.org/wikipedia/en/9/96/Spider-Man_2_PS5_cover.jpg" },
+            { id: 35, title: "Baldur's Gate 3", genre: "RPG", year: 2023, rating: 9.9, mood: ["story", "strategy", "deep"], steamId: "1086940" },
+            // --- NEW ENTRIES ---
+            { id: 36, title: "Rocket League", genre: "Sports", year: 2015, rating: 9.0, mood: ["competitive", "social", "short"], steamId: "252950" },
+            { id: 37, title: "Street Fighter 6", genre: "Fighting", year: 2023, rating: 9.2, mood: ["competitive", "action", "short"], steamId: "1364780" },
+            { id: 38, title: "Forza Horizon 5", genre: "Racing", year: 2021, rating: 9.4, mood: ["chill", "beautiful", "exploration"], steamId: "1551360" },
+            { id: 39, title: "The Last of Us Part I", genre: "Action-Adventure", year: 2022, rating: 9.8, mood: ["story", "emotional", "zombies"], steamId: "1888930" },
+            { id: 40, title: "Terraria", genre: "Sandbox", year: 2011, rating: 9.7, mood: ["creative", "exploration", "social"], steamId: "105600" },
+            { id: 41, title: "Mass Effect Legendary Edition", genre: "RPG", year: 2021, rating: 9.6, mood: ["story", "sci-fi", "epic"], steamId: "1328670" },
+            { id: 42, title: "Cuphead", genre: "Platformer", year: 2017, rating: 9.5, mood: ["challenging", "beautiful", "classic"], steamId: "268910" },
+            { id: 43, title: "Resident Evil 4 Remake", genre: "Horror", year: 2023, rating: 9.7, mood: ["scary", "action", "classic"], steamId: "2050650" },
+            { id: 44, title: "Apex Legends", genre: "Battle Royale", year: 2019, rating: 8.8, mood: ["competitive", "FPS", "social"], steamId: "1172470" },
+            { id: 45, title: "Final Fantasy VII Remake", genre: "JRPG", year: 2020, rating: 9.4, mood: ["story", "beautiful", "action"], steamId: "1462040" },
+            { id: 46, title: "GTA V", genre: "Action", year: 2013, rating: 9.5, mood: ["open-world", "crime", "story"], steamId: "271590" },
+            { id: 47, title: "Slay the Spire", genre: "Roguelike", year: 2019, rating: 9.7, mood: ["strategy", "card", "addictive"], steamId: "646570" },
+            { id: 48, title: "Overwatch 2", genre: "FPS", year: 2022, rating: 8.0, mood: ["competitive", "hero", "social"], steamId: "2357570" },
+            { id: 49, title: "Dead Cells", genre: "Metroidvania", year: 2018, rating: 9.6, mood: ["action", "challenging", "pixel"], steamId: "588650" },
+            { id: 50, title: "Skyrim: Special Edition", genre: "RPG", year: 2016, rating: 9.4, mood: ["exploration", "fantasy", "classic"], steamId: "489830" },
+            { id: 51, title: "Fallout 4", genre: "RPG", year: 2015, rating: 8.8, mood: ["exploration", "sci-fi", "shooter"], steamId: "377160" },
+            { id: 52, title: "Risk of Rain 2", genre: "Roguelike", year: 2020, rating: 9.5, mood: ["action", "social", "chaotic"], steamId: "632360" },
+            { id: 53, title: "Rust", genre: "Survival", year: 2018, rating: 8.7, mood: ["social", "competitive", "crafting"], steamId: "252490" },
+            { id: 54, title: "Euro Truck Simulator 2", genre: "Simulation", year: 2012, rating: 9.6, mood: ["chill", "driving", "podcast"], steamId: "227300" },
+            { id: 55, title: "Ori and the Will of the Wisps", genre: "Platformer", year: 2020, rating: 9.8, mood: ["beautiful", "emotional", "challenging"], steamId: "1057090" },
+            { id: 56, title: "Monster Hunter: World", genre: "Action-RPG", year: 2018, rating: 9.3, mood: ["grind", "epic", "social"], steamId: "582010" },
+            { id: 57, title: "Sea of Thieves", genre: "Adventure", year: 2018, rating: 8.9, mood: ["social", "funny", "pirate"], steamId: "1172620" },
+            { id: 58, title: "Tekken 8", genre: "Fighting", year: 2024, rating: 9.3, mood: ["competitive", "action", "new"], steamId: "1778820" },
+            { id: 59, title: "Palworld", genre: "Survival", year: 2024, rating: 9.0, mood: ["social", "collection", "funny"], steamId: "1623730" },
+            { id: 60, title: "Destiny 2", genre: "FPS", year: 2019, rating: 8.4, mood: ["social", "grind", "sci-fi"], steamId: "1085660" },
+            // --- CONSOLE EXCLUSIVES & HITS ---
+            { id: 61, title: "Super Mario Odyssey", genre: "Platformer", year: 2017, rating: 9.7, mood: ["chill", "creative", "exploration"], imageUrl: "https://upload.wikimedia.org/wikipedia/en/8/8d/Super_Mario_Odyssey.jpg" },
+            { id: 62, title: "Halo Infinite", genre: "FPS", year: 2021, rating: 8.7, mood: ["action", "sci-fi", "competitive"], steamId: "1240440" },
+            { id: 63, title: "Uncharted 4", genre: "Action-Adventure", year: 2016, rating: 9.5, mood: ["story", "action", "beautiful"], steamId: "1659040" },
+            { id: 64, title: "Gears 5", genre: "TPS", year: 2019, rating: 8.5, mood: ["action", "co-op", "sci-fi"], steamId: "1097840" },
+            { id: 65, title: "Ratchet & Clank: Rift Apart", genre: "Platformer", year: 2021, rating: 8.9, mood: ["beautiful", "funny", "action"], steamId: "1895880" },
+            { id: 66, title: "Mario Kart 8 Deluxe", genre: "Racing", year: 2017, rating: 9.3, mood: ["social", "competitive", "funny"], imageUrl: "https://upload.wikimedia.org/wikipedia/en/b/b5/MarioKart8Boxart.jpg" },
+            { id: 67, title: "Demon's Souls", genre: "RPG", year: 2020, rating: 9.2, mood: ["challenging", "dark", "beautiful"], imageUrl: "https://upload.wikimedia.org/wikipedia/en/4/43/Demon%27s_Souls_%282020%29_cover_art.jpg" },
+            { id: 68, title: "Gran Turismo 7", genre: "Racing", year: 2022, rating: 8.8, mood: ["simulation", "beautiful", "chill"], imageUrl: "https://upload.wikimedia.org/wikipedia/en/thumb/1/14/Gran_Turismo_7_cover_art.jpg/220px-Gran_Turismo_7_cover_art.jpg" },
+            { id: 69, title: "Super Smash Bros. Ultimate", genre: "Fighting", year: 2018, rating: 9.4, mood: ["competitive", "social", "action"], imageUrl: "https://upload.wikimedia.org/wikipedia/en/5/50/Super_Smash_Bros._Ultimate.jpg" },
+            { id: 70, title: "Returnal", genre: "Roguelike", year: 2021, rating: 8.7, mood: ["challenging", "scary", "sci-fi"], steamId: "1649240" },
+            { id: 71, title: "Starfield", genre: "RPG", year: 2023, rating: 8.0, mood: ["exploration", "sci-fi", "long"], steamId: "1716740" },
+            { id: 72, title: "Hi-Fi RUSH", genre: "Action", year: 2023, rating: 9.2, mood: ["action", "music", "beautiful"], steamId: "1817230" },
+            { id: 73, title: "Ghost of Tsushima", genre: "Action-Adventure", year: 2020, rating: 9.5, mood: ["story", "beautiful", "samurai"], steamId: "2215430" },
+            { id: 74, title: "The Legend of Zelda: Tears of the Kingdom", genre: "Action-Adventure", year: 2023, rating: 9.8, mood: ["creative", "exploration", "story"], imageUrl: "https://upload.wikimedia.org/wikipedia/en/f/f6/The_Legend_of_Zelda_Tears_of_the_Kingdom_cover.jpg" },
+            { id: 75, title: "Detroit: Become Human", genre: "Adventure", year: 2018, rating: 9.0, mood: ["story", "sci-fi", "choice"], steamId: "1222140" }
+        ];
+
+        // --- 2. THREE.JS BACKGROUND ---
+        class BackgroundScene {
+            constructor() {
+                this.container = document.getElementById('canvas-container');
+                this.scene = new THREE.Scene();
+                this.camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 1000);
+                this.renderer = new THREE.WebGLRenderer({ alpha: true, antialias: true });
+
+                this.renderer.setSize(window.innerWidth, window.innerHeight);
+                this.renderer.setPixelRatio(window.devicePixelRatio);
+                this.container.appendChild(this.renderer.domElement);
+
+                this.initObjects();
+                this.animate();
+
+                window.addEventListener('resize', () => this.onWindowResize(), false);
+                document.addEventListener('mousemove', (e) => this.onMouseMove(e), false);
+
+                this.mouseX = 0;
+                this.mouseY = 0;
+            }
+
+            initObjects() {
+                // Particles
+                const geometry = new THREE.BufferGeometry();
+                const particlesCount = 1200;
+                const posArray = new Float32Array(particlesCount * 3);
+
+                for (let i = 0; i < particlesCount * 3; i++) {
+                    posArray[i] = (Math.random() - 0.5) * 20; // Spread
+                }
+
+                geometry.setAttribute('position', new THREE.BufferAttribute(posArray, 3));
+
+                const material = new THREE.PointsMaterial({
+                    size: 0.02,
+                    color: 0x6C63FF,
+                    transparent: true,
+                    opacity: 0.8,
+                });
+
+                this.particlesMesh = new THREE.Points(geometry, material);
+                this.scene.add(this.particlesMesh);
+
+                // Add some floating geometric shapes
+                this.shapes = [];
+                const shapeGeoms = [
+                    new THREE.IcosahedronGeometry(1, 0),
+                    new THREE.OctahedronGeometry(1, 0),
+                    new THREE.TetrahedronGeometry(1, 0)
+                ];
+
+                for (let i = 0; i < 5; i++) {
+                    const geom = shapeGeoms[Math.floor(Math.random() * shapeGeoms.length)];
+                    const mat = new THREE.MeshBasicMaterial({
+                        color: 0x00F5D4,
+                        wireframe: true,
+                        transparent: true,
+                        opacity: 0.1
+                    });
+                    const mesh = new THREE.Mesh(geom, mat);
+                    mesh.position.set(
+                        (Math.random() - 0.5) * 15,
+                        (Math.random() - 0.5) * 10,
+                        (Math.random() - 0.5) * 10 - 5
+                    );
+                    mesh.scale.setScalar(Math.random() * 2 + 0.5);
+                    this.scene.add(mesh);
+                    this.shapes.push({ mesh, speed: Math.random() * 0.01 + 0.002 });
+                }
+
+                this.camera.position.z = 5;
+            }
+
+            onMouseMove(event) {
+                this.mouseX = event.clientX / window.innerWidth - 0.5;
+                this.mouseY = event.clientY / window.innerHeight - 0.5;
+            }
+
+            onWindowResize() {
+                this.camera.aspect = window.innerWidth / window.innerHeight;
+                this.camera.updateProjectionMatrix();
+                this.renderer.setSize(window.innerWidth, window.innerHeight);
+            }
+
+            animate() {
+                requestAnimationFrame(() => this.animate());
+
+                // Gentle rotation of particles
+                this.particlesMesh.rotation.y += 0.001;
+                this.particlesMesh.rotation.x += 0.0005;
+
+                // Mouse interaction parallax
+                this.particlesMesh.rotation.y += this.mouseX * 0.05;
+                this.particlesMesh.rotation.x += this.mouseY * 0.05;
+
+                // Float shapes
+                this.shapes.forEach(obj => {
+                    obj.mesh.rotation.x += obj.speed;
+                    obj.mesh.rotation.y += obj.speed;
+                });
+
+                this.renderer.render(this.scene, this.camera);
+            }
+        }
+
+        // --- 3. APP LOGIC ---
+
+        class UserProfile {
+            constructor(age, gender, country) {
+                this.age = age ? parseInt(age) : null;
+                this.gender = gender;
+                this.country = country;
+            }
+        }
+
+        class MLRecommendationEngine {
+            constructor() {
+                // "Trained" weights - simplifying complex associations
+                this.weights = {
+                    "age": {
+                        "mature": {
+                            "JRPG": 0.24,
+                            "Simulation": 1.67,
+                            "RPG": 0.18,
+                            "Action": 0.4,
+                            "FPS": -0.72,
+                            "Puzzle": 1.64,
+                            "Battle Royale": -1.0,
+                            "Strategy": 1.75
+                        },
+                        "adult": {
+                            "Action": 0.36,
+                            "JRPG": 0.22,
+                            "RPG": 1.31,
+                            "Puzzle": 0.24,
+                            "Adventure": 1.18,
+                            "Simulation": 0.42,
+                            "FPS": 0.32,
+                            "Strategy": 0.5
+                        },
+                        "young": {
+                            "Action": 1.75,
+                            "Simulation": 0.33,
+                            "JRPG": 0.32,
+                            "Puzzle": -0.43,
+                            "FPS": 1.68,
+                            "Battle Royale": 1.5,
+                            "RPG": 0.21,
+                            "Strategy": -0.1
+                        }
+                    },
+                    "gender": {
+                        "male": {
+                            "JRPG": 0.27,
+                            "Action": 1.05,
+                            "RPG": 0.59,
+                            "Simulation": 1.01,
+                            "Puzzle": 0.79,
+                            "Adventure": 0.37,
+                            "Battle Royale": -0.35,
+                            "FPS": 0.43,
+                            "Strategy": 1.75
+                        },
+                        "female": {
+                            "Simulation": 1.66,
+                            "Action": 0.45,
+                            "JRPG": 0.22,
+                            "Battle Royale": -0.41,
+                            "Puzzle": 1.59,
+                            "RPG": 0.48,
+                            "Strategy": 1.08,
+                            "FPS": -0.54,
+                            "Adventure": 0.25
+                        },
+                        "other": {
+                            "RPG": 0.51,
+                            "JRPG": 0.29,
+                            "FPS": -0.35,
+                            "Adventure": 0.38,
+                            "Puzzle": 0.81,
+                            "Simulation": 0.98,
+                            "Battle Royale": -0.45,
+                            "Strategy": 1.19,
+                            "Action": 0.29
+                        },
+                        "non-binary": {
+                            "Action": 0.27,
+                            "RPG": 0.66,
+                            "Puzzle": 0.64,
+                            "Adventure": 0.39,
+                            "JRPG": 0.18,
+                            "Battle Royale": -0.47,
+                            "Simulation": 1.05,
+                            "FPS": -0.25,
+                            "Strategy": 1.1
+                        }
+                    },
+                    "region": {
+                        "AFR": {
+                            "Simulation": 1.0,
+                            "Battle Royale": -0.28,
+                            "Puzzle": 1.03,
+                            "FPS": -0.36,
+                            "RPG": 0.41,
+                            "Strategy": 1.06,
+                            "Adventure": 0.28,
+                            "Action": 0.43
+                        },
+                        "EU": {
+                            "RPG": 0.38,
+                            "Action": 0.39,
+                            "Puzzle": 0.94,
+                            "Adventure": 0.34,
+                            "FPS": -0.26,
+                            "Simulation": 1.62,
+                            "Strategy": 1.54,
+                            "Battle Royale": -0.42
+                        },
+                        "OCE": {
+                            "Action": 0.4,
+                            "Simulation": 1.04,
+                            "FPS": -0.37,
+                            "RPG": 0.41,
+                            "Adventure": 0.42,
+                            "Puzzle": 1.07,
+                            "Battle Royale": -0.53,
+                            "Strategy": 1.08
+                        },
+                        "SA": {
+                            "RPG": 0.28,
+                            "Puzzle": 0.9,
+                            "Battle Royale": -0.48,
+                            "Adventure": 0.41,
+                            "Strategy": 1.1,
+                            "Simulation": 1.18,
+                            "Action": 0.38,
+                            "FPS": -0.29
+                        },
+                        "NA": {
+                            "Action": 1.15,
+                            "RPG": 0.45,
+                            "Adventure": 0.35,
+                            "Simulation": 1.14,
+                            "Puzzle": 0.89,
+                            "FPS": 0.54,
+                            "Strategy": 1.08,
+                            "Battle Royale": -0.4
+                        },
+                        "ASIA": {
+                            "RPG": 1.49,
+                            "Adventure": 0.27,
+                            "JRPG": 1.25,
+                            "Action": 0.44,
+                            "Battle Royale": -0.43,
+                            "Strategy": 1.71,
+                            "Simulation": 1.18,
+                            "FPS": -0.36,
+                            "Puzzle": 0.97
+                        }
+                    }
+                };
+            }
+
+            predict(game, profile) {
+                let score = 0;
+
+                // Age Logic
+                if (profile.age) {
+                    if (profile.age < 18) score += this.getWeight('age', 'young', game);
+                    else if (profile.age < 35) score += this.getWeight('age', 'adult', game);
+                    else score += this.getWeight('age', 'mature', game);
+                }
+
+                // Gender Logic
+                if (profile.gender) {
+                    score += this.getWeight('gender', profile.gender, game);
+                }
+
+                // Region Logic
+                if (profile.country) {
+                    score += this.getWeight('region', profile.country, game);
+                }
+
+                return score;
+            }
+
+            getWeight(category, key, game) {
+                let s = 0;
+                const weights = this.weights[category][key] || {};
+
+                // Check Genre
+                if (weights[game.genre]) s += weights[game.genre];
+
+                // Check Moods
+                if (game.mood) {
+                    game.mood.forEach(m => {
+                        if (weights[m]) s += weights[m];
+                    });
+                }
+
+                return s;
+            }
+        }
+
+        class GameApp {
+            constructor() {
+                try {
+                    this.favorites = JSON.parse(localStorage.getItem('myFavorites')) || [];
+                    const savedProfile = JSON.parse(localStorage.getItem('userProfile'));
+                    this.userProfile = savedProfile ? new UserProfile(savedProfile.age, savedProfile.gender, savedProfile.country) : null;
+
+                    // Username
+                    this.username = localStorage.getItem('username') || 'Gamer';
+                } catch (e) {
+                    console.error("Error loading data:", e);
+                    this.favorites = [];
+                    this.userProfile = null;
+                    this.username = 'Gamer';
+                }
+
+                this.mlEngine = new MLRecommendationEngine();
+                this.selectedMoods = new Set();
+                this.currentSort = 'newest';
+                this.currentFilter = 'all';
+                this.currentSearch = '';
+
+                this.init();
+                this.updateUsernameUI();
+                this.updateGamerSummary();
+                this.checkPersonalizationStatus();
+            }
+
+            // --- Username Methods ---
+            toggleEditName() {
+                const container = document.getElementById('edit-name-container');
+                const isHidden = container.style.display === 'none';
+                container.style.display = isHidden ? 'flex' : 'none';
+
+                if (isHidden) {
+                    const input = document.getElementById('username-input');
+                    input.value = this.username;
+                    input.focus();
+                }
+            }
+
+            saveUsername() {
+                const input = document.getElementById('username-input');
+                const newName = input.value.trim();
+
+                if (newName) {
+                    this.username = newName;
+                    localStorage.setItem('username', newName); // Save to local storage
+                    this.updateUsernameUI();
+                    this.toggleEditName(); // Close editor
+                    this.showToast(`Nice to meet you, ${newName}!`, "success");
+                } else {
+                    this.showToast("Please enter a valid name", "info");
+                }
+            }
+
+            updateUsernameUI() {
+                const el = document.getElementById('profile-username');
+                if (el) el.textContent = `Welcome back, ${this.username}`;
+            }
+
+            checkPersonalizationStatus() {
+                if (!this.userProfile) {
+                    const btn = document.getElementById('personalize-btn');
+                    if (btn) {
+                        const badge = document.createElement('div');
+                        badge.className = 'setup-badge';
+                        badge.innerText = '!';
+                        btn.appendChild(badge);
+                    }
+                }
+            }
+
+            // --- Personalization Methods ---
+            openPersonalization() {
+                const modal = document.getElementById('personalization-modal');
+                modal.classList.add('active');
+
+                // Pre-fill if exists
+                if (this.userProfile) {
+                    document.getElementById('user-age').value = this.userProfile.age || '';
+                    document.getElementById('user-gender').value = this.userProfile.gender || '';
+                    document.getElementById('user-country').value = this.userProfile.country || '';
+                }
+            }
+
+            closePersonalization() {
+                document.getElementById('personalization-modal').classList.remove('active');
+            }
+
+            savePersonalization() {
+                const age = document.getElementById('user-age').value;
+                const gender = document.getElementById('user-gender').value;
+                const country = document.getElementById('user-country').value;
+
+                this.userProfile = new UserProfile(age, gender, country);
+                localStorage.setItem('userProfile', JSON.stringify(this.userProfile));
+
+                this.closePersonalization();
+                this.showToast("Profile calibrated! Recommendations updated.", "success");
+
+                // Remove badge if exists
+                const badge = document.querySelector('.setup-badge');
+                if (badge) badge.remove();
+
+                // Trigger recalc if we are on home page
+                // We won't auto-generate, but user can click the button again with new weights
+            }
+
+            // Toast Helper
+            showToast(message, type = 'info') {
+                const container = document.getElementById('toast-container');
+                const toast = document.createElement('div');
+                toast.className = `toast ${type}`;
+                toast.innerHTML = `<span>${type === 'success' ? '✅' : 'ℹ️'}</span> ${message}`;
+
+                container.appendChild(toast);
+
+                setTimeout(() => {
+                    toast.style.animation = 'fadeOut 0.5s forwards';
+                    setTimeout(() => toast.remove(), 500);
+                }, 3000);
+            }
+
+            init() {
+                // Initialize Filters
+                this.populateGenreDropdown();
+
+                // Initialize Mood Selector
+                document.querySelectorAll('.chip').forEach(chip => {
+                    chip.addEventListener('click', () => {
+                        chip.classList.toggle('selected');
+                        const mood = chip.dataset.mood;
+                        if (this.selectedMoods.has(mood)) {
+                            this.selectedMoods.delete(mood);
+                        } else {
+                            this.selectedMoods.add(mood);
+                        }
+                    });
+                });
+
+                // Initial Renders
+                this.renderGames(gameData, 'browse-grid');
+                this.updateFavoritesUI();
+
+                // Initial Recommendations (Random mix)
+                this.renderGames(gameData.sort(() => 0.5 - Math.random()).slice(0, 4), 'recommendation-grid');
+            }
+
+            navigate(targetId) {
+                // Update Nav States
+                document.querySelectorAll('.nav-btn').forEach(btn => {
+                    btn.classList.toggle('active', btn.dataset.target === targetId);
+                });
+
+                // Transition Sections
+                document.querySelectorAll('.section').forEach(section => {
+                    section.classList.remove('active');
+                });
+
+                const target = document.getElementById(targetId);
+                target.classList.add('active');
+
+                // Special render logic for tabs
+                if (targetId === 'browse') this.applyFilters();
+                if (targetId === 'profile') this.updateFavoritesUI();
+            }
+
+            toggleFavorite(id, btnElement) {
+                const index = this.favorites.indexOf(id);
+                const game = gameData.find(g => g.id === id);
+                let message = "";
+                let type = "info";
+
+                if (index === -1) {
+                    this.favorites.push(id);
+                    message = `Added <b>${game.title}</b> to favorites`;
+                    type = "success";
+                } else {
+                    this.favorites.splice(index, 1);
+                    message = `Removed <b>${game.title}</b> from favorites`;
+                }
+
+                localStorage.setItem('myFavorites', JSON.stringify(this.favorites));
+
+                // Sync all buttons for this game across the UI
+                const allButtons = document.querySelectorAll(`.fav-btn[data-game-id="${id}"]`);
+                allButtons.forEach(btn => {
+                    if (index === -1) {
+                        btn.classList.add('active');
+                        btn.innerHTML = '❤️';
+                    } else {
+                        btn.classList.remove('active');
+                        btn.innerHTML = '🤍';
+                    }
+                });
+
+                this.showToast(message, type);
+
+                // If on profile page, refresh instantly to show/hide cards
+                if (document.getElementById('profile').classList.contains('active')) {
+                    this.updateFavoritesUI();
+                }
+
+                this.updateFavCount();
+                this.updateGamerSummary();
+            }
+
+            updateFavCount() {
+                document.getElementById('fav-count').textContent = this.favorites.length;
+            }
+
+            updateGamerSummary() {
+                const summaryEl = document.getElementById('gamer-summary');
+                if (!summaryEl) return;
+
+                if (this.favorites.length === 0) {
+                    summaryEl.innerHTML = "Start adding favorites to see your gaming persona analysis!";
+                    return;
+                }
+
+                const favGames = gameData.filter(g => this.favorites.includes(g.id));
+
+                // Count Genres and Moods
+                const genres = {};
+                const moods = {};
+
+                favGames.forEach(g => {
+                    genres[g.genre] = (genres[g.genre] || 0) + 1;
+                    g.mood.forEach(m => moods[m] = (moods[m] || 0) + 1);
+                });
+
+                // Get Top 2
+                const sortedGenres = Object.entries(genres).sort((a, b) => b[1] - a[1]).map(e => e[0]);
+                const sortedMoods = Object.entries(moods).sort((a, b) => b[1] - a[1]).map(e => e[0]);
+
+                const topGenre = sortedGenres[0];
+                const secondGenre = sortedGenres[1];
+                const topMood = sortedMoods[0];
+                const secondMood = sortedMoods[1];
+
+                let text = `You are a true fan of <strong style="color:var(--secondary)">${topGenre}</strong>`;
+                if (secondGenre) text += ` and <strong style="color:var(--secondary)">${secondGenre}</strong> games.`;
+                else text += ` games.`;
+
+                text += `<br>You tend to seek out experiences that are <strong style="color:var(--primary)">${topMood}</strong>`;
+                if (secondMood) text += ` and <strong style="color:var(--primary)">${secondMood}</strong>.`;
+
+                summaryEl.innerHTML = text;
+            }
+
+            generateRecommendations() {
+                if (this.selectedMoods.size === 0) {
+                    alert("Please select at least one mood tag!");
+                    return;
+                }
+
+                // Scoring System
+                const scoredGames = gameData.map(game => {
+                    let score = 0;
+                    const gameMoods = game.mood || [];
+
+                    // 1. Mood Matching (Base Score)
+                    this.selectedMoods.forEach(selected => {
+                        // Direct match
+                        if (gameMoods.includes(selected)) score += 2;
+
+                        // Related moods (Simple thesaurus logic)
+                        if (selected === 'action' && game.genre === 'FPS') score += 1;
+                        if (selected === 'chill' && game.year > 2018) score += 0.5; // Newer games look better usually
+                    });
+
+                    // 2. ML Personalization Boost
+                    if (this.userProfile) {
+                        const mlScore = this.mlEngine.predict(game, this.userProfile);
+                        score += mlScore;
+                    }
+
+                    return { ...game, score };
+                });
+
+                const recommendations = scoredGames
+                    .filter(g => g.score > 0)
+                    .sort((a, b) => b.score - a.score)
+                    .slice(0, 8); // Top 8
+
+                this.renderGames(recommendations, 'recommendation-grid');
+
+                // Scroll to results
+                document.getElementById('recommendation-grid').scrollIntoView({ behavior: 'smooth' });
+            }
+
+            populateGenreDropdown() {
+                const genres = [...new Set(gameData.map(g => g.genre))].sort();
+                const select = document.getElementById('genre-filter');
+                genres.forEach(g => {
+                    const option = document.createElement('option');
+                    option.value = g;
+                    option.textContent = g;
+                    select.appendChild(option);
+                });
+            }
+
+            handleSort(value) {
+                this.currentSort = value;
+                this.applyFilters();
+            }
+
+            handleFilter(value) {
+                this.currentFilter = value;
+                this.applyFilters();
+            }
+
+            handleSearch(value) {
+                this.currentSearch = value.toLowerCase();
+                this.applyFilters();
+            }
+
+            applyFilters() {
+                let filtered = [...gameData];
+
+                // 1. Search
+                if (this.currentSearch) {
+                    filtered = filtered.filter(g => g.title.toLowerCase().includes(this.currentSearch));
+                }
+
+                // 2. Genre
+                if (this.currentFilter !== 'all') {
+                    filtered = filtered.filter(g => g.genre === this.currentFilter);
+                }
+
+                // 3. Sort
+                filtered.sort((a, b) => {
+                    if (this.currentSort === 'newest') return b.year - a.year;
+                    if (this.currentSort === 'oldest') return a.year - b.year;
+                    if (this.currentSort === 'rating') return b.rating - a.rating;
+                    if (this.currentSort === 'name') return a.title.localeCompare(b.title);
+                    return 0;
+                });
+
+                this.renderGames(filtered, 'browse-grid');
+            }
+
+            updateFavoritesUI() {
+                const favGames = gameData.filter(g => this.favorites.includes(g.id));
+                this.updateFavCount();
+
+                if (favGames.length === 0) {
+                    document.getElementById('favorites-grid').innerHTML = `
+                        <div class="empty-state">
+                            <h3>No favorites yet</h3>
+                            <p>Go browse and heart some games!</p>
+                        </div>
+                    `;
+                } else {
+                    this.renderGames(favGames, 'favorites-grid');
+                }
+            }
+
+            updateFavCount() {
+                document.getElementById('fav-count').textContent = this.favorites.length;
+            }
+
+            openTrailer(gameTitle) {
+                const query = encodeURIComponent(`${gameTitle} gameplay trailer`);
+                window.open(`https://www.youtube.com/results?search_query=${query}`, '_blank');
+            }
+
+            openStore(game) {
+                if (game.steamId) {
+                    window.open(`https://store.steampowered.com/app/${game.steamId}`, '_blank');
+                } else {
+                    const query = encodeURIComponent(`buy ${game.title} game`);
+                    window.open(`https://www.google.com/search?q=${query}`, '_blank');
+                }
+            }
+
+            renderGames(games, containerId) {
+                const container = document.getElementById(containerId);
+                container.innerHTML = '';
+
+                games.forEach(game => {
+                    const isFav = this.favorites.includes(game.id);
+                    const card = document.createElement('div');
+                    card.className = 'game-card';
+
+                    let imageUrl;
+                    if (game.steamId) {
+                        // High quality Steam vertical library asset
+                        imageUrl = `https://shared.akamai.steamstatic.com/store_item_assets/steam/apps/${game.steamId}/library_600x900.jpg`;
+                    } else if (game.imageUrl) {
+                        imageUrl = game.imageUrl;
+                    } else {
+                        // Safe fallback
+                        const encodedTitle = encodeURIComponent(game.title);
+                        imageUrl = `https://placehold.co/400x600/1a1a1a/FFF?text=${encodedTitle}`;
+                    }
+
+                    card.innerHTML = `
+                        <div class="card-visual">
+                            <img src="${imageUrl}" alt="${game.title}" loading="lazy" onerror="
+                                this.onerror=null; 
+                                this.parentElement.style.background = 'linear-gradient(135deg, var(--primary), var(--bg-dark))';
+                                this.parentElement.innerHTML = '<h3 style=\\\'padding:1rem;text-align:center;text-shadow:0 2px 4px rgba(0,0,0,0.5);\\\'>${game.title}</h3>';
+                            ">
+                        </div>
+                        <div class="card-content">
+                            <div class="game-meta">
+                                <span>${game.year}</span>
+                                <span class="rating">★ ${game.rating}</span>
+                            </div>
+                            <h3 class="game-title">${game.title}</h3>
+                            <div><span class="game-genre">${game.genre}</span></div>
+                            <div class="card-footer" style="display: flex; gap: 5px;">
+                                <button class="cta-btn" title="Watch Trailer" style="flex: 1; padding: 0.5rem; font-size: 0.8rem; background: transparent; border: 1px solid var(--primary); white-space: nowrap;" onclick="app.openTrailer('${game.title.replace(/'/g, "\\'")}')">
+                                    ▶ Trailer
+                                </button>
+                                <button class="cta-btn" title="Get Game" style="flex: 1; padding: 0.5rem; font-size: 0.8rem; background: rgba(0, 245, 212, 0.1); border: 1px solid var(--secondary); white-space: nowrap;" onclick='app.openStore(${JSON.stringify(game).replace(/'/g, "&#39;")})'>
+                                    ⬇️ Download
+                                </button>
+                                <button class="fav-btn ${isFav ? 'active' : ''}" title="Favorite" style="flex: 0 0 auto;" data-game-id="${game.id}" onclick="app.toggleFavorite(${game.id}, this)">
+                                    ${isFav ? '❤️' : '🤍'}
+                                </button>
+                            </div>
+                        </div>
+                    `;
+                    container.appendChild(card);
+                });
+            }
+        }
+
+        // Init Everything
+        window.addEventListener('load', () => {
+            const bg = new BackgroundScene();
+            window.app = new GameApp();
+        });
+
+    </script>
+</body>
+
+</html>
